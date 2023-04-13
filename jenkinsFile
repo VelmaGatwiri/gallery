@@ -1,0 +1,42 @@
+pipeline { 
+  agent any
+  tools { 
+    nodejs "nodejs 19.8.1"
+  }
+  stages { 
+    stage('clone repository') {
+      steps { 
+        git 'https://github.com/VelmaGatwiri/gallery'
+      }
+    }
+    stage('Install Dependencies') {
+      steps { 
+        sh 'npm install'
+      }
+    }
+    stage('Tests') {
+        post{
+            failure{
+                mail bcc: '', body: 'The Test failed.', cc: '', from: '', replyTo: '', subject: 'Test Failed!', to: 'velma.gatwiri@student.moringaschool.com'
+            }
+           
+        }
+      steps { 
+        sh 'npm test'
+      }
+    }
+    stage('Deploy to Heroku') {
+        steps {
+            withCredentials([usernameColonPassword(credentialsId: 'heroku', variable: 'HEROKU_CREDENTIALS' )]){
+                sh 'git push https://${HEROKU_CREDENTIALS}@git.heroku.com/hidden-wildwood-34754.git master'
+    }
+  }
+} 
+    stage('Slack Notification') {
+      steps { 
+        slackSend channel: 'velma_ip1', color: '#FFC0CB', message: 'Congratulations! Project ${env.JOB_NAME}, build number  ${env.BUILD_NUMBER} has been successfully deployed to (<https://hidden-wildwood-34754.herokuapp.com/ | Gallery App>)', teamDomain: 'schoolassignmentgroup', tokenCredentialId: 'Slack'      
+          
+      }
+    }
+  }
+}
